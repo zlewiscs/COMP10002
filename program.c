@@ -26,24 +26,23 @@
 #define MAX_LEN 20 							  /* The max number of letters per hashtag is 20*/
 
 typedef struct {
-	
+	/* add your user_t struct definition */
+
 	int user_num; // user number
-	
+
 	int year; // year started
 
 	char **hashtags; // array of hashtags
-
+	
 	int hashtag_count; // number of hashtags to be derived from hashtags
 
-	
 	int cfriend_count; // number of close friends (added for stage 4)
-
 	
 	int is_core; // status as core user
 
 } user_t;
 
-typedef char* data_t;
+typedef char* data_t;							  /* to be modified for Stage 4 */
 
 /* linked list type definitions below, from
    https://people.eng.unimelb.edu.au/ammoffat/ppsaa/c/listops.c 
@@ -83,7 +82,7 @@ void stage_two(user_t *users, int *user_count, int **matrix);
 void stage_three(user_t *users, int **friendship_m, int *user_count, double **soc_matrix);
 void stage_four(user_t *users, double *ths, int *thc, double **soc_matrix, int *user_count);
 
-/* my own function prototypes */
+/* add your own function prototypes here */
 void read_users(user_t *users, int *user_count);
 void most_hash_user(user_t *users, int *user_count, int *max_hashtag_user_idx);
 int** create_matrix(int *user_count);
@@ -99,10 +98,10 @@ void fill_unique_hashtags(user_t *users, community_t *communities, int *core_use
 void fill_close_friends(community_t *communities, user_t *users, int *core_users_count,
 double **soc_matrix, double *ths, int *user_count);
 void stage_4_output(community_t *communities, int *core_users_count, user_t *users);
+void count_close_friends(user_t *users, double **soc_matrix, int *user_count, double *ths);
 
 /****************************************************************/
 
-/* main function controls all the action; modify if needed */
 int
 main(int argc, char *argv[]) {
 	/* add variables to hold the input data */
@@ -115,13 +114,14 @@ main(int argc, char *argv[]) {
 	/* stage 1: read user profiles */
 	stage_one(users, &user_count, &max_hashtag_user_idx); 
 	
-	/* calculate the soc between u0 and u1*/
+	/* calculate the soc between u0 and u1 */
 	int **matrix = create_matrix(&user_count);
 	stage_two(users, &user_count, matrix);
 
 	/* stage 3: compute the strength of connection for all user pairs */
 	double **soc_matrix = create_soc_matrix(matrix, &user_count);
 	stage_three(users, matrix, &user_count, soc_matrix);
+	
 
 	/* stage 4: detect communities and topics of interest */
 	scanf("%lf %d", &ths, &thc);
@@ -132,14 +132,13 @@ main(int argc, char *argv[]) {
 	free_matrix(matrix, &user_count);
 	free_double_matrix(soc_matrix, &user_count);
 	
+	/* all done; take some rest */
 	return 0;
 }
 
 /****************************************************************/
 
-/* add your code below; you can also modify the function return type 
-   and parameter list 
-*/
+/********************* The 4 main stages ***********************/
 
 /* stage 1: read user profiles */
 void 
@@ -169,7 +168,6 @@ void
 stage_two(user_t *users, int *user_count, int **matrix) {
 	/* print stage header */
 	print_stage_header(STAGE_NUM_TWO);
-	
 	double soc = s_o_c(matrix[0], matrix[1], users[0].user_num, users[1].user_num, user_count);
 	printf("Strength of connection between u0 and u1: %4.2f", soc);
 
@@ -203,18 +201,11 @@ double **soc_matrix, int *user_count) {
 	print_stage_header(STAGE_NUM_FOUR);
 	
 	int core_users_count = 0;
+	count_close_friends(users, soc_matrix, 
+	user_count, ths);
 
-	/* indexing columns */
+	/* update core users status */
 	for(int i = 0; i < *user_count; i++) {
-		users[i].cfriend_count = 0;		
-		/* indexing rows */
-		for(int j = 0; j < *user_count; j++) {
-			if (soc_matrix[i][j] > *ths) {
-				users[i].cfriend_count++;
-			}
-		}
-
-		/* determine if ith user is a core user */
 		if (is_core(users[i], thc)) {
 			users[i].is_core = 1;
 			core_users_count++;
@@ -222,7 +213,7 @@ double **soc_matrix, int *user_count) {
 			users[i].is_core = 0;
 		}
 	}
-	
+
 	community_t *communities = malloc(core_users_count * sizeof(community_t));
 	assert(communities);
 
@@ -236,16 +227,19 @@ double **soc_matrix, int *user_count) {
 
 	fill_close_friends(communities, users, &core_users_count, 
 	soc_matrix, ths, user_count);
-
 	fill_unique_hashtags(users, communities, &core_users_count);
-
 	stage_4_output(communities, &core_users_count, users);
 
+	/* free memories allocated for communities and its keys */
+	for(int i = 0; i < core_users_count; i++) {
+		free_list(communities[i].unique_hashtags);
+	}
 	free_communities(communities, &core_users_count);
+	
 }
 
 /****************************************************************/
-/* functions provided, adapt them as appropriate */
+/*********** implementing my own function prototypes ************/
 
 /* read in user data from file and count the number of users */
 void 
@@ -258,18 +252,18 @@ read_users(user_t *users, int *user_count) {
 		j = 0; // reset j for next user
 		users[i].hashtag_count = 0; // reset hashtag count for user
 
-		/* allocate memory for hashtags array of ith user */
+		/* allocate memory for hashtags array of ith user */ 
 		users[i].hashtags = malloc(MAX_HASHTAG * sizeof(char*)); 
 		assert(users[i].hashtags);
 		
-		/* go through the line(user i) */
+		/* go through the line(user i) */ 
 		while((c = getchar()) != '\n'){
 			/* start of a hashtag */
 			if (c == '#') {
 				k = 0; // reset k for keeping track of new string
 				users[i].hashtag_count++; // increment number of hashtags
 				
-				/* allocate memory for jth hashtag for ith user */
+				/* allocate memory for jth hashtag for ith user */ 
 				users[i].hashtags[j] = malloc((MAX_LEN + 1) * sizeof(char)); 
 				assert(users[i].hashtags[j]);
 				users[i].hashtags[j][k] = c; //hashtags start with the char '#'
@@ -294,7 +288,7 @@ read_users(user_t *users, int *user_count) {
 void 
 most_hash_user(user_t *users, int *user_count, int *max_hashtag_user_idx) {
 	int max_hashtag_num = 0;
-	int temp_max = 0; // flag variable to keep track of current users' hashtag count
+	int temp_max = 0; //flag variable to keep track of current users' hashtag count
 
 	for(int i = 0; i < *user_count; i++) {
 		temp_max = users[i].hashtag_count;
@@ -312,7 +306,7 @@ create_matrix(int *user_count) {
 	assert(matrix);
 
 	for(int i = 0; i < *user_count;) {
-		// allocate memory for each row
+		/* allocate memory for each row */ 
 		matrix[i] = malloc(*user_count * sizeof(int));
 		assert(matrix[i]);
 		for(int j = 0; j < *user_count; j++) {
@@ -388,6 +382,22 @@ is_core(user_t user, int *thc) {
 	}
 }
 
+/* update the close friend count of each user */
+void
+count_close_friends(user_t *users, double **soc_matrix, int *user_count, 
+double *ths) {
+	/* indexing columns */
+	for(int i = 0; i < *user_count; i++) {
+		users[i].cfriend_count = 0;		
+		/* indexing rows */
+		for(int j = 0; j < *user_count; j++) {
+			if (soc_matrix[i][j] > *ths) {
+				users[i].cfriend_count++;
+			}
+		}
+	}
+}
+
 /* fill in keys related to close_friends property */
 void
 fill_close_friends(community_t *communities, user_t *users, int *core_users_count,
@@ -427,7 +437,7 @@ community_t *communities, int *core_users_count) {
 		communities[i].unique_hashtags = make_empty_list();
 		assert(communities[i].unique_hashtags);
 		user_index = communities[i].core_user_num;
-		/* insert core users' hashtags into the list*/
+		/* insert core users' hashtags into the list */
 		for(int j = 0; j < users[user_index].hashtag_count; j++) {
 			communities[i].unique_hashtags = 
 			insert_unique_in_order(communities[i].unique_hashtags, 
@@ -485,7 +495,7 @@ free_double_matrix(double **soc_matrix, int *user_count) {
 	free(soc_matrix); // free the whole matrix
 }
 
-/* free the user_t type struct its array components */
+/* free the user_t type struct and its array keys */
 void
 free_users(user_t *users, int *user_count) {
 	for(int i = 0; i < *user_count; i++) {
@@ -505,6 +515,8 @@ free_communities(community_t *communities, int *core_users_count){
 	}
 	free(communities);
 }
+
+/* below are functions skeletons provided by instructor, adapted by me when desired */
 
 /* print stage header given stage number */
 void 
@@ -539,6 +551,7 @@ free_list(list_t *list) {
 	while (curr) {
 		prev = curr;
 		curr = curr->next;
+		free(prev->data);
 		free(prev);
 	}
 
@@ -569,7 +582,7 @@ list_t
 		/* keep track of the current and previous node traversed */
 		while (current != NULL && strcmp(new->data, current->data) >= 0) {
 			if (strcmp(new->data, current->data) == 0) {
-                		/* Value is already in the list, do not insert */
+                /* Value is already in the list, do not insert */
 				return list;
 			} else {
 				previous = current;
@@ -579,16 +592,16 @@ list_t
 		}
 
 		if (previous == NULL) {
-			/* Insert at the beginning of the list */
+			/* Insert at the beginning of the list */ 
 			new->next = list->head;
 			list->head = new;
 		} else {
-			/* Insert in the middle or at the end */
+			/* Insert in the middle or at the end */ 
 			new->next = current;
 			previous->next = new;
 
 			if (current == NULL) {
-                		/* Insert at the end of the list */
+                /* Insert at the end of the list */ 
 				list->foot = new;
 			}
 		}
@@ -600,7 +613,6 @@ list_t
 /* print the data contents of a list */
 void
 print_list(list_t *list) {
-	/* add code to print list */
 	node_t *current = list->head;
 	int hash_count = 0;
 
