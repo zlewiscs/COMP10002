@@ -26,29 +26,24 @@
 #define MAX_LEN 20 							  /* The max number of letters per hashtag is 20*/
 
 typedef struct {
-	/* add your user_t struct definition */
+	
+	int user_num; // user number
+	
+	int year; // year started
 
-	// user number
-	int user_num;
+	char **hashtags; // array of hashtags
 
-	// year started
-	int year;
+	int hashtag_count; // number of hashtags to be derived from hashtags
 
-	// array of hashtags
-	char **hashtags;
+	
+	int cfriend_count; // number of close friends (added for stage 4)
 
-	// number of hashtags to be derived from hashtags (array of pointers)
-	int hashtag_count;
-
-	// number of close friends (added for stage 4)
-	int cfriend_count;
-
-	// status as core user
-	int is_core;
+	
+	int is_core; // status as core user
 
 } user_t;
 
-typedef char* data_t;							  /* to be modified for Stage 4 */
+typedef char* data_t;
 
 /* linked list type definitions below, from
    https://people.eng.unimelb.edu.au/ammoffat/ppsaa/c/listops.c 
@@ -88,7 +83,7 @@ void stage_two(user_t *users, int *user_count, int **matrix);
 void stage_three(user_t *users, int **friendship_m, int *user_count, double **soc_matrix);
 void stage_four(user_t *users, double *ths, int *thc, double **soc_matrix, int *user_count);
 
-/* add your own function prototypes here */
+/* my own function prototypes */
 void read_users(user_t *users, int *user_count);
 void most_hash_user(user_t *users, int *user_count, int *max_hashtag_user_idx);
 int** create_matrix(int *user_count);
@@ -132,12 +127,11 @@ main(int argc, char *argv[]) {
 	scanf("%lf %d", &ths, &thc);
 	stage_four(users, &ths, &thc, soc_matrix, &user_count);
 
-	// free memories
+	/* free memories */
 	free_users(users, &user_count);
 	free_matrix(matrix, &user_count);
 	free_double_matrix(soc_matrix, &user_count);
 	
-	/* all done; take some rest */
 	return 0;
 }
 
@@ -150,13 +144,12 @@ main(int argc, char *argv[]) {
 /* stage 1: read user profiles */
 void 
 stage_one(user_t *users, int *user_count, int *max_hashtag_user_idx) {
-	/* add code for stage 1 */
 	/* print stage header */
 	print_stage_header(STAGE_NUM_ONE);
 	read_users(users, user_count);
 	most_hash_user(users, user_count, max_hashtag_user_idx);
 
-	//print the desired output
+	/* print the desired output */
 	printf("Number of users: %d\n", *user_count);
 	printf("u%d has the largest number of hashtags:\n", *max_hashtag_user_idx);
 	for(int i = 0; i < users[*max_hashtag_user_idx].hashtag_count; i++){
@@ -174,9 +167,9 @@ stage_one(user_t *users, int *user_count, int *max_hashtag_user_idx) {
 /* stage 2: compute the strength of connection between u0 and u1 */
 void 
 stage_two(user_t *users, int *user_count, int **matrix) {
-	/* add code for stage 2 */
 	/* print stage header */
 	print_stage_header(STAGE_NUM_TWO);
+	
 	double soc = s_o_c(matrix[0], matrix[1], users[0].user_num, users[1].user_num, user_count);
 	printf("Strength of connection between u0 and u1: %4.2f", soc);
 
@@ -186,7 +179,6 @@ stage_two(user_t *users, int *user_count, int **matrix) {
 /* stage 3: compute the strength of connection for all user pairs */
 void 
 stage_three(user_t *users, int **friendship_m, int *user_count, double **soc_matrix) {
-	/* add code for stage 3 */
 	/* print stage header */
 	print_stage_header(STAGE_NUM_THREE);
 	for(int i = 0; i < *user_count - 1; i++) {
@@ -207,7 +199,6 @@ stage_three(user_t *users, int **friendship_m, int *user_count, double **soc_mat
 void 
 stage_four(user_t *users, double *ths, int *thc, 
 double **soc_matrix, int *user_count) {
-	/* add code for stage 4 */
 	/* print stage header */
 	print_stage_header(STAGE_NUM_FOUR);
 	
@@ -223,7 +214,7 @@ double **soc_matrix, int *user_count) {
 			}
 		}
 
-		// determine if ith user is a core user
+		/* determine if ith user is a core user */
 		if (is_core(users[i], thc)) {
 			users[i].is_core = 1;
 			core_users_count++;
@@ -267,24 +258,24 @@ read_users(user_t *users, int *user_count) {
 		j = 0; // reset j for next user
 		users[i].hashtag_count = 0; // reset hashtag count for user
 
-		// allocate memory for hashtags array of ith user
+		/* allocate memory for hashtags array of ith user */
 		users[i].hashtags = malloc(MAX_HASHTAG * sizeof(char*)); 
 		assert(users[i].hashtags);
 		
-		// go through the line(user i)
+		/* go through the line(user i) */
 		while((c = getchar()) != '\n'){
-			// start of a hashtag
+			/* start of a hashtag */
 			if (c == '#') {
 				k = 0; // reset k for keeping track of new string
 				users[i].hashtag_count++; // increment number of hashtags
 				
-				// allocate memory for jth hashtag for ith user
+				/* allocate memory for jth hashtag for ith user */
 				users[i].hashtags[j] = malloc((MAX_LEN + 1) * sizeof(char)); 
 				assert(users[i].hashtags[j]);
 				users[i].hashtags[j][k] = c; //hashtags start with the char '#'
 				k++;
 			} else if (c != ' ') {
-				//if the char read in is not space, add the char to kth pos of jth string
+				/* if the char read in is not space, add the char to kth pos of jth string */
 				users[i].hashtags[j][k] = c;
 				k++;
 			} else if (c == ' ') {
@@ -303,7 +294,7 @@ read_users(user_t *users, int *user_count) {
 void 
 most_hash_user(user_t *users, int *user_count, int *max_hashtag_user_idx) {
 	int max_hashtag_num = 0;
-	int temp_max = 0; //flag variable to keep track of current users' hashtag count
+	int temp_max = 0; // flag variable to keep track of current users' hashtag count
 
 	for(int i = 0; i < *user_count; i++) {
 		temp_max = users[i].hashtag_count;
@@ -443,7 +434,7 @@ community_t *communities, int *core_users_count) {
 			users[user_index].hashtags[j]);
 
 		}
-		/* insert close friends' hashtag into list*/
+		/* insert close friends' hashtag into list */
 		for(int j = 0; j < communities[i].close_friend_count; j++) {
 			for(int k = 0; k < users[communities[i].close_friend_nums[j]].hashtag_count; k++) {
 				communities[i].unique_hashtags = 
@@ -578,7 +569,7 @@ list_t
 		/* keep track of the current and previous node traversed */
 		while (current != NULL && strcmp(new->data, current->data) >= 0) {
 			if (strcmp(new->data, current->data) == 0) {
-                // Value is already in the list, do not insert
+                		/* Value is already in the list, do not insert */
 				return list;
 			} else {
 				previous = current;
@@ -588,16 +579,16 @@ list_t
 		}
 
 		if (previous == NULL) {
-			// Insert at the beginning of the list
+			/* Insert at the beginning of the list */
 			new->next = list->head;
 			list->head = new;
 		} else {
-			// Insert in the middle or at the end
+			/* Insert in the middle or at the end */
 			new->next = current;
 			previous->next = new;
 
 			if (current == NULL) {
-                // Insert at the end of the list
+                		/* Insert at the end of the list */
 				list->foot = new;
 			}
 		}
